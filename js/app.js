@@ -254,9 +254,18 @@ function rendreAccueil() {
     liste.appendChild(c);
   });
 
-  // Règles du bloc
+  // Règles du bloc + échéance : ce que le bloc suivant déverrouille (lu dans les JSON)
+  const blocNum = parseInt((getBlocActif().id.match(/\d+/) || [1])[0], 10);
+  const deverrouillages = [];
+  Object.values(state.seances).forEach(s => s.phases.forEach(p =>
+    (p.variantes || []).forEach(v => {
+      if ((v.bloc_min || 1) > blocNum) deverrouillages.push(v.label);
+    })));
   document.getElementById("regles").innerHTML =
-    `<ul>${state.bloc.regles.map(r => `<li>${r}</li>`).join("")}</ul>`;
+    `<ul>${state.bloc.regles.map(r => `<li>${r}</li>`).join("")}</ul>` +
+    (restant > 0 && deverrouillages.length
+      ? `<p class="prochain-bloc">Bloc ${blocNum + 1} dans ${restant} j — débloque : ${deverrouillages.join(" · ")}.</p>`
+      : "");
 }
 
 /* ----- Ligne du jour : quoi aujourd'hui, que reste-t-il ----- */

@@ -130,3 +130,32 @@ vélo doux coûte un geste. Signal physique : rappel 24h préservé même par ce
 chemin. Hyperfocus : le raccourci évite précisément d'ouvrir-regarder l'app.
 
 **Verdict : gardée.**
+
+---
+
+## Itération 5 — L'échéance bloc 2 rendue concrète · GARDÉE
+
+**Proposition.** Sous les règles du bloc, une ligne discrète : « Bloc 2 dans 28 j —
+débloque : Turkish Get-Up · Swings KB. » Les labels sont **lus dans les JSON de
+séance** (variantes `bloc_min` > bloc courant) — zéro contenu inventé, et la ligne
+disparaît d'elle-même quand le bloc est terminé ou qu'il n'y a rien à déverrouiller.
+Le compteur « Bloc 2 dans N j » existait ; il gagne un contenu concret à attendre.
+
+**Traits servis.** 6 (nouveauté planifiée : une échéance datée avec un contenu
+nommé, pas un générateur) et 3 (le déverrouillage progressif porte le rationale du
+bloc reprise).
+**Comportement changé.** L'attente du bloc 2 a un objet précis, sans rien
+demander.
+**Coût d'attention.** Nul : une ligne statique en pied d'accueil.
+
+**Pré-score : 17/20** (5 + 2 + 4 + 3 + 3).
+
+**Tests.** Ligne correcte avec les deux variantes verrouillées trouvées dans
+combat-flow ; disparition vérifiée quand `date_debut` est vieille de 5 semaines
+(bloc fini). Régression : 31/31.
+
+**Personas.** Toutes : ligne inerte et identique — elle ne réagit à aucun
+comportement, ne récompense pas l'ouverture répétée (hyperfocus), ne juge rien
+(fatigue/signal). Elle ne fait que rendre l'échéance tangible.
+
+**Verdict : gardée.**

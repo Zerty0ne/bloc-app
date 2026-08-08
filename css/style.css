@@ -131,6 +131,7 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
 /* ---------- Règles du bloc ---------- */
 .regles { font-size: 0.8rem; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--line); padding-top: 14px; }
 .regles li { margin-left: 18px; margin-bottom: 6px; }
+.prochain-bloc { margin-top: 10px; color: var(--accent-dim); }
 
 /* ---------- Mode séance ---------- */
 .seance-vue { display: flex; flex-direction: column; min-height: calc(100vh - 40px); padding-bottom: 24px; }
