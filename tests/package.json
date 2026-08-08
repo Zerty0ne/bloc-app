@@ -1,0 +1,6 @@
+{
+  "name": "bloc-tests",
+  "private": true,
+  "scripts": { "test": "node lancer.js" },
+  "dependencies": { "playwright-core": "^1.49.0" }
+}

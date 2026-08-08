@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "schema_version": 2,
+  "bloc_actif": {
+    "id": "bloc-1",
+    "date_debut": "2026-08-08"
+  },
+  "journal": [
+    {
+      "date": "2026-08-08",
+      "type": "course",
+      "note": ""
+    },
+    {
+      "date": "2026-08-08",
+      "type": "boxe",
+      "note": ""
+    }
+  ],
+  "charges": {},
+  "backlog_idees": []
+}
