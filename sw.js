@@ -1,5 +1,5 @@
 /* Service worker — cache-first, précache complet pour usage offline */
-const CACHE = "bloc-v4";
+const CACHE = "bloc-v5";
 const FICHIERS = [
   "./",
   "./assets/exercices/farmer-carry-1.jpg",

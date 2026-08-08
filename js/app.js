@@ -221,10 +221,12 @@ function joursAvantBlocSuivant() {
   return Math.max(state.bloc.duree_semaines * 7 - joursEntre(debut, new Date()), 0);
 }
 
+function fmtJJMM(iso) { return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`; }
+
 function fmtDateCourte(iso) {
   const d = new Date(iso + "T00:00:00");
   const jours = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
-  return `${jours[d.getDay()]} ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  return `${jours[d.getDay()]} ${fmtJJMM(iso)}`;
 }
 
 function rendreAccueil() {
@@ -809,7 +811,7 @@ function dessinerCourbe(canvas, points) {
   const step = Math.ceil(points.length / 5);   // max ~5 étiquettes de date
   points.forEach((p, i) => {
     if (i % step === 0 || i === points.length - 1)
-      ctx.fillText(p.date.slice(5).replace("-", "/"), x(i), H - 14);
+      ctx.fillText(fmtJJMM(p.date), x(i), H - 14);
   });
 }
 
@@ -937,7 +939,7 @@ function rendreIdees() {
   liste.innerHTML = b.length ? "" : `<p class="hint">Aucune idée pour l'instant — c'est bon signe, tu t'entraînes.</p>`;
   b.forEach((idee, i) => {
     const li = document.createElement("li");
-    li.innerHTML = `<span>${idee.texte}</span><span class="date">${idee.date.slice(5)}</span>`;
+    li.innerHTML = `<span>${idee.texte}</span><span class="date">${fmtJJMM(idee.date)}</span>`;
     const suppr = document.createElement("button");
     suppr.className = "suppr"; suppr.textContent = "✕";
     suppr.setAttribute("aria-label", "Supprimer");
