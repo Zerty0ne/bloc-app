@@ -64,3 +64,33 @@ qu'avec les données, rien à farmer.
 
 **Verdict : gardée** (une reformulation en cours d'itération : la première version
 renvoyait vers « la ligne du jour », référence croisée confuse depuis le bilan).
+
+---
+
+## Itération 3 — Deltas de charges sur l'écran de fin de séance · GARDÉE
+
+**Proposition.** L'écran « Terminé » de la séance renfo affiche les charges saisies
+du jour avec le delta vs la séance précédente (« Goblet squat 16 kg (+2) »,
+« = » si stable, « première mesure » sinon). C'est le pic de feedback légitime
+du territoire 5 : densifier ce moment sans le rallonger.
+
+**Traits servis.** 1 (feedback immédiat au moment où il a le plus de valeur).
+**Comportement changé.** La progression se voit à la seconde où la séance se
+termine, au lieu d'exiger un détour par l'écran Charges.
+**Coût d'attention.** Nul : zéro tap, l'écran de fin existait déjà, le bouton
+« Valider et fermer » reste au même endroit.
+
+**Pré-score : 19/20** (5 + 4 + 4 + 3 + 3).
+
+**Tests.** Séance guidée complète avec historique seedé : « 16 kg (+2) » affiché
+pour l'exercice avec antécédent, « première mesure » pour le nouveau, exercices
+non remplis absents de la liste, persistance des charges inchangée après
+validation. Régression : 31/31. (Un delta négatif s'affiche « −x » sans autre
+traitement : une charge qui baisse est une donnée, pas un échec.)
+
+**Personas.** Idéale/fatigue : le (+) ou le (=) est le même feedback sobre ; en
+séance minimale l'écran reste identique. Signal physique : une baisse volontaire
+de charge s'affiche factuellement, aucun marquage. Hyperfocus : l'écran n'existe
+qu'en fin de séance réelle — il récompense l'entraînement, pas la consultation.
+
+**Verdict : gardée.**

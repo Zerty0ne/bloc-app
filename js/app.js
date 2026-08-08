@@ -667,11 +667,25 @@ function rendreExercice(phase) {
 /* ----- Fin de séance ----- */
 function rendreFin() {
   stopTimer(); libererEcran();
+
+  // Charges du jour vs séance précédente — le feedback au bon moment
+  const histo = getCharges();
+  const lignesCharges = Object.entries(seanceCtx.chargesSaisies).map(([id, kg]) => {
+    const pts = histo[id] || [];
+    const prev = pts.length ? pts[pts.length - 1].kg : null;
+    const delta = prev === null ? null : kg - prev;
+    const deltaTxt = delta === null ? `<small>première mesure</small>`
+      : delta ? ` (${delta > 0 ? "+" : ""}${String(delta.toFixed(1)).replace(/\.0$/, "")})` : ` (=)`;
+    return `<div class="bilan-ligne"><span>${state.exercices[id]?.nom || id}</span>
+      <span class="val">${kg} kg${deltaTxt}</span></div>`;
+  }).join("");
+
   const vue = document.getElementById("view-seance");
   vue.innerHTML = `
     <div class="seance-head"><span class="seance-phase-nom">Terminé</span></div>
     <div class="seance-corps lancement">
       <h2>Séance faite${seanceCtx.minimale ? " (minimale — ça compte pareil)" : ""}.</h2>
+      ${lignesCharges ? `<div class="fin-charges">${lignesCharges}</div>` : ""}
       <p>Ressenti du jour, si tu veux — une ligne suffit :</p>
       <textarea id="ressenti" maxlength="200" placeholder="Optionnel"></textarea>
     </div>
