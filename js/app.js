@@ -791,6 +791,44 @@ function statsSemaine(lundi) {
   return { counts, quotas, extras, pct: Math.round(taux * 100) };
 }
 
+/* Lecture de la semaine : 1-2 phrases par règles simples, ton factuel.
+   Jamais de « manqué », jamais de compte de semaines consécutives. */
+function lectureSemaine(cette, entrees) {
+  const phrases = [];
+  const cles = Object.keys(cette.quotas);
+  const done = cles.filter(t => (cette.counts[t] || 0) >= cette.quotas[t]);
+  const extrasN = Object.values(cette.extras).reduce((a, b) => a + b, 0);
+  const jourIdx = (new Date().getDay() + 6) % 7;   // 0 = lundi
+
+  if (!entrees.length) {
+    phrases.push(jourIdx <= 2
+      ? "Rien de noté pour l'instant — la semaine commence."
+      : "Peu d'entrées cette semaine — lundi remet les compteurs à zéro.");
+  } else if (done.length === cles.length) {
+    phrases.push(`Tous les quotas sont couverts${extrasN
+      ? `, plus ${extrasN} extra${extrasN > 1 ? "s" : ""}` : ""}.`);
+  } else if (done.length) {
+    phrases.push(`${done.map(labelType).join(" et ")} couvert${done.length > 1 ? "s" : ""}, le reste de la semaine est ouvert.`);
+  } else {
+    phrases.push(`${entrees.length} entrée${entrees.length > 1 ? "s" : ""} posée${entrees.length > 1 ? "s" : ""} sur la semaine.`);
+  }
+
+  const minimales = entrees.filter(e => (e.note || "").includes("séance minimale")).length;
+  if (minimales) phrases.push(`${minimales} séance${minimales > 1 ? "s" : ""} minimale${minimales > 1 ? "s" : ""} — ` +
+    `comptée${minimales > 1 ? "s" : ""} en plein : la régularité prime sur le volume.`);
+
+  // Dépassement sur les types sensibles tendons : rappel de l'objectif du bloc
+  const surQuota = ["course", "renfo"].filter(t =>
+    t in cette.quotas && (cette.counts[t] || 0) > cette.quotas[t]);
+  if (surQuota.length && state.bloc.objectif) phrases.push(
+    `${surQuota.map(labelType).join(" et ")} au-dessus du quota — rappel du bloc : « ${state.bloc.objectif} »`);
+
+  if (phrases.length < 2 && extrasN && done.length !== cles.length) phrases.push(
+    `${extrasN} extra${extrasN > 1 ? "s" : ""} hors quotas (${Object.keys(cette.extras).map(labelType).join(", ")}).`);
+
+  return phrases.slice(0, 2).join(" ");
+}
+
 function rendreBilan() {
   const lundi = lundiDe(new Date());
   const cette = statsSemaine(lundi);
@@ -814,6 +852,10 @@ function rendreBilan() {
     `<div class="bilan-ligne"><span>${labelType(t)}</span><span class="val">${n}</span></div>`).join("");
 
   cont.innerHTML = `
+    <div class="bilan-carte">
+      <h3>Lecture</h3>
+      <p class="lecture">${lectureSemaine(cette, entreesSemaine(lundi))}</p>
+    </div>
     <div class="bilan-carte">
       <h3>Quotas</h3>
       ${Object.entries(cette.quotas).map(([t, q]) =>
