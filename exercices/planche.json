@@ -1,0 +1,10 @@
+{
+  "id": "planche",
+  "nom": "Planche",
+  "images": [
+    "assets/exercices/planche-1.jpg",
+    "assets/exercices/planche-2.jpg"
+  ],
+  "rappel_technique": "Coudes sous les épaules, corps aligné, fessiers serrés — pas de hanches qui tombent.",
+  "pourquoi": "Le gainage qui transfère la force entre le haut et le bas — sur le vélo comme en course."
+}

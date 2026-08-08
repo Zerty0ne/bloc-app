@@ -1,0 +1,52 @@
+{
+  "id": "bloc-1",
+  "nom": "Bloc 1 — Reprise",
+  "duree_semaines": 4,
+  "objectif": "Pas de la performance — de l'appétit et des tissus.",
+  "semaine_type": [
+    {
+      "jour": "lundi",
+      "type": "repos",
+      "label": "Repos"
+    },
+    {
+      "jour": "mardi",
+      "type": "velo",
+      "label": "Vélo court",
+      "detail": "1h-1h15, bois, Eco/Tour, option Django"
+    },
+    {
+      "jour": "mercredi",
+      "type": "renfo",
+      "label": "Renfo KB",
+      "seance_id": "renfo-reprise"
+    },
+    {
+      "jour": "jeudi",
+      "type": "course",
+      "label": "Marche-course",
+      "detail": "S1-2 : 20-25 min (2 min courues / 1 min marchée). S3-4 : 25-30 min continu si aucun signal."
+    },
+    {
+      "jour": "vendredi",
+      "type": "repos",
+      "label": "Repos ou vélo très doux",
+      "optionnel": true
+    },
+    {
+      "jour": "samedi",
+      "type": "velo",
+      "label": "Sortie longue",
+      "detail": "1h30 → 2h30 en progressant"
+    },
+    {
+      "jour": "dimanche",
+      "type": "course",
+      "label": "Marche-course + 10 min mobilité"
+    }
+  ],
+  "regles": [
+    "Jamais course et renfo jambes à moins de 24h l'un de l'autre.",
+    "Règle du lendemain : gêne persistante au réveil = la séance course suivante devient vélo doux, sans état d'âme."
+  ]
+}

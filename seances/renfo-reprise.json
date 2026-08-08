@@ -1,0 +1,60 @@
+{
+  "id": "renfo-reprise",
+  "nom": "Renfo reprise — 25 min",
+  "phases": [
+    {
+      "nom": "Mobilité d'ouverture",
+      "type": "timer",
+      "duree_min": 5,
+      "contenu": [
+        "Cercles de hanches et d'épaules",
+        "Chat-chameau",
+        "World's greatest stretch",
+        "Chevilles en appui au mur"
+      ]
+    },
+    {
+      "nom": "Bloc force",
+      "type": "tours",
+      "nb_tours": 3,
+      "nb_tours_minimal": 2,
+      "exercices": [
+        {
+          "exercice_id": "goblet-squat",
+          "reps": "8-10",
+          "charge_trackee": true
+        },
+        {
+          "exercice_id": "rdl-2kb",
+          "reps": "8",
+          "charge_trackee": true
+        },
+        {
+          "exercice_id": "rowing-1-bras",
+          "reps": "8/côté",
+          "charge_trackee": true
+        },
+        {
+          "exercice_id": "farmer-carry",
+          "reps": "30-40 m",
+          "charge_trackee": true
+        },
+        {
+          "exercice_id": "mollets-marche",
+          "reps": "12-15 lents",
+          "charge_trackee": false
+        }
+      ]
+    },
+    {
+      "nom": "Fermeture",
+      "type": "timer",
+      "duree_min": 5,
+      "contenu": [
+        "Planche",
+        "Planches latérales",
+        "Respiration"
+      ]
+    }
+  ]
+}

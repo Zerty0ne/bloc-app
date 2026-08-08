@@ -1,0 +1,10 @@
+{
+  "id": "mollets-marche",
+  "nom": "Mollets debout sur une marche",
+  "images": [
+    "assets/exercices/mollets-marche-1.jpg",
+    "assets/exercices/mollets-marche-2.jpg"
+  ],
+  "rappel_technique": "Avant-pied sur la marche, amplitude complète, montée ET descente lentes — c'est la descente qui compte.",
+  "pourquoi": "Le tendon d'Achille se prépare avant les kilomètres, pas après la douleur."
+}

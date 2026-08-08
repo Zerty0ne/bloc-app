@@ -1,0 +1,53 @@
+{
+  "id": "tibetains-matin",
+  "nom": "Tibétains du matin",
+  "type": "libre",
+  "compatible_tous_jours": true,
+  "description": "Routine de réveil quotidienne. Compatible tous les jours, y compris jours de repos du bloc.",
+  "phases": [
+    {
+      "nom": "Les 5 Tibétains",
+      "type": "sequence",
+      "exercices": [
+        {
+          "exercice_id": "tibetain-1-toupie",
+          "reps": "jusqu'à 11"
+        },
+        {
+          "exercice_id": "tibetain-2-table",
+          "reps": "jusqu'à 11"
+        },
+        {
+          "exercice_id": "tibetain-3-demilune",
+          "reps": "jusqu'à 11"
+        },
+        {
+          "exercice_id": "tibetain-4-pont",
+          "reps": "jusqu'à 11"
+        },
+        {
+          "exercice_id": "tibetain-5-triangle",
+          "reps": "jusqu'à 11"
+        }
+      ]
+    },
+    {
+      "nom": "Complément",
+      "type": "sequence",
+      "exercices": [
+        {
+          "exercice_id": "pompes-militaires",
+          "reps": "10"
+        },
+        {
+          "exercice_id": "decompression-vertebrale",
+          "reps": "30 s"
+        },
+        {
+          "exercice_id": "squats-legers",
+          "reps": "20"
+        }
+      ]
+    }
+  ]
+}

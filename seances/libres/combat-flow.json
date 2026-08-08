@@ -1,0 +1,116 @@
+{
+  "id": "combat-flow",
+  "nom": "Combat-Flow",
+  "type": "libre",
+  "compatible_tous_jours": false,
+  "description": "Séance boxe/grappling du soir.",
+  "note_compatibilite": "Bloc 1 = pas de balistique KB. Swings et TGU débloqués au bloc 2.",
+  "phases": [
+    {
+      "nom": "Échauffement dynamique",
+      "type": "sequence",
+      "exercices": [
+        {
+          "exercice_id": "shadowboxing-leger",
+          "reps": "2-3 min"
+        },
+        {
+          "exercice_id": "fentes-alternees",
+          "reps": "10/jambe"
+        },
+        {
+          "exercice_id": "squats-profonds",
+          "reps": "15"
+        },
+        {
+          "exercice_id": "shrimping",
+          "reps": "8-10/côté"
+        },
+        {
+          "exercice_id": "bear-crawl",
+          "reps": "2-3 allers-retours de 4-5 m"
+        }
+      ]
+    },
+    {
+      "nom": "Circuit technique",
+      "type": "tours",
+      "nb_tours": 5,
+      "nb_tours_minimal": 3,
+      "exercices": [
+        {
+          "exercice_id": "boxe-deplacement",
+          "reps": "1 min"
+        },
+        {
+          "exercice_id": "shot",
+          "reps": "30 s"
+        },
+        {
+          "exercice_id": "sprawl",
+          "reps": "30 s"
+        },
+        {
+          "exercice_id": "technical-stand-up",
+          "reps": "30 s"
+        },
+        {
+          "exercice_id": "repos",
+          "reps": "30 s"
+        }
+      ]
+    },
+    {
+      "nom": "Finisher (un seul au choix)",
+      "type": "choix",
+      "variantes": [
+        {
+          "id": "finisher-bloc1",
+          "label": "Shadowboxing explosif",
+          "bloc_min": 1,
+          "exercices": [
+            {
+              "exercice_id": "shadowboxing-explosif",
+              "reps": "1 min"
+            }
+          ]
+        },
+        {
+          "id": "finisher-tgu",
+          "label": "Turkish Get-Up",
+          "bloc_min": 2,
+          "exercices": [
+            {
+              "exercice_id": "turkish-get-up",
+              "reps": "2-3/côté",
+              "charge_trackee": true
+            }
+          ]
+        },
+        {
+          "id": "finisher-swing",
+          "label": "Swings KB",
+          "bloc_min": 2,
+          "exercices": [
+            {
+              "exercice_id": "kb-swing",
+              "reps": "2×10",
+              "charge_trackee": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "Étirements",
+      "type": "timer",
+      "duree_min": 6,
+      "contenu": [
+        "Pigeon assis (hanches)",
+        "Bras croisé devant la poitrine (épaules)",
+        "Chat-vache (dos)",
+        "Selon raideurs : flexion avant debout (ischios), fente basse (quadriceps), poignets"
+      ]
+    }
+  ]
+}

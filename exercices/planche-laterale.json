@@ -1,0 +1,10 @@
+{
+  "id": "planche-laterale",
+  "nom": "Planche latérale",
+  "images": [
+    "assets/exercices/planche-laterale-1.jpg",
+    "assets/exercices/planche-laterale-2.jpg"
+  ],
+  "rappel_technique": "Coude sous l'épaule, hanches hautes, corps en ligne de la tête aux pieds.",
+  "pourquoi": "La stabilité latérale du bassin — celle qui protège genoux et chevilles à chaque foulée."
+}

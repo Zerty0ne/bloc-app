@@ -1,0 +1,10 @@
+{
+  "id": "rowing-1-bras",
+  "nom": "Rowing un bras",
+  "images": [
+    "assets/exercices/rowing-1-bras-1.jpg",
+    "assets/exercices/rowing-1-bras-2.jpg"
+  ],
+  "rappel_technique": "Buste parallèle au sol, appui stable, tire le coude vers la hanche sans rotation du tronc.",
+  "pourquoi": "Le dos qui tient le guidon en descente et la posture de course quand la fatigue arrive."
+}

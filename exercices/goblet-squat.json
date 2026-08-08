@@ -1,0 +1,10 @@
+{
+  "id": "goblet-squat",
+  "nom": "Goblet squat",
+  "images": [
+    "assets/exercices/goblet-squat-1.jpg",
+    "assets/exercices/goblet-squat-2.jpg"
+  ],
+  "rappel_technique": "KB tenue contre la poitrine, descends entre les jambes, poitrine haute, talons au sol.",
+  "pourquoi": "La base jambes de ta reprise : profondeur propre sous charge légère, hanches et genoux qui réapprennent l'amplitude."
+}
