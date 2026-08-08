@@ -20,7 +20,10 @@ const LS = {
     try { const v = localStorage.getItem("bloc." + key); return v ? JSON.parse(v) : fallback; }
     catch { return fallback; }
   },
-  set(key, value) { localStorage.setItem("bloc." + key, JSON.stringify(value)); },
+  set(key, value) {
+    try { localStorage.setItem("bloc." + key, JSON.stringify(value)); }
+    catch { toast("Sauvegarde impossible — stockage plein ? Exporte tes données (Réglages)."); }
+  },
 };
 
 function getBlocActif()   { return LS.get("bloc_actif", null); }
@@ -122,7 +125,13 @@ function lundiDe(d) {
   r.setDate(r.getDate() - dow); r.setHours(0, 0, 0, 0); return r;
 }
 function addJours(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
-function joursEntre(a, b) { return Math.floor((b - a) / 86400000); }
+/* Jours calendaires entre deux dates, de minuit à minuit (arrondi : les
+   semaines de 167 h ou 169 h aux changements d'heure comptent 7 jours). */
+function joursEntre(a, b) {
+  const ma = new Date(a); ma.setHours(0, 0, 0, 0);
+  const mb = new Date(b); mb.setHours(0, 0, 0, 0);
+  return Math.round((mb - ma) / 86400000);
+}
 
 /* ---------- Chargement des données ---------- */
 async function chargerJSON(url) {
@@ -939,7 +948,13 @@ function rendreIdees() {
   liste.innerHTML = b.length ? "" : `<p class="hint">Aucune idée pour l'instant — c'est bon signe, tu t'entraînes.</p>`;
   b.forEach((idee, i) => {
     const li = document.createElement("li");
-    li.innerHTML = `<span>${idee.texte}</span><span class="date">${fmtJJMM(idee.date)}</span>`;
+    const texte = document.createElement("span");
+    texte.textContent = idee.texte;
+    const date = document.createElement("span");
+    date.className = "date";
+    date.textContent = fmtJJMM(idee.date);
+    li.appendChild(texte);
+    li.appendChild(date);
     const suppr = document.createElement("button");
     suppr.className = "suppr"; suppr.textContent = "✕";
     suppr.setAttribute("aria-label", "Supprimer");
@@ -986,6 +1001,12 @@ function brancherReglages() {
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result);
+        // Un export Bloc contient un journal (V2+) ou des validations (V1) —
+        // tout autre fichier est rejeté sans toucher aux données existantes.
+        if (!data || typeof data !== "object" ||
+            (!Array.isArray(data.journal) && typeof data.validations !== "object")) {
+          alert("Fichier illisible — export Bloc attendu."); return;
+        }
         ["bloc_actif", "charges", "backlog_idees"].forEach(k => {
           if (data[k] !== undefined) LS.set(k, data[k]);
         });
