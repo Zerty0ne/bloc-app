@@ -164,6 +164,16 @@ async function init() {
 
   migrerV2();
 
+  // Raccourci OS (appui long sur l'icône) : ?fait=velo|course → journalise et confirme
+  const fait = new URLSearchParams(location.search).get("fait");
+  if (fait) {
+    history.replaceState(null, "", location.pathname);   // pas de re-saisie au rechargement
+    if (typesActivite().some(t => t.id === fait)) {
+      toast(`${labelType(fait)} — noté.`);
+      ajouterEntree(isoDate(new Date()), fait);           // le rappel 24h, s'il joue, remplace le toast
+    }
+  }
+
   brancherNavigation();
   brancherReglages();
   brancherIdees();

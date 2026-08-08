@@ -94,3 +94,39 @@ de charge s'affiche factuellement, aucun marquage. Hyperfocus : l'écran n'exist
 qu'en fin de séance réelle — il récompense l'entraînement, pas la consultation.
 
 **Verdict : gardée.**
+
+---
+
+## Itération 4 — Raccourcis OS « J'ai fait vélo / course » · GARDÉE
+
+**Proposition.** Deux `shortcuts` dans le manifest PWA (appui long sur l'icône
+Android) : « J'ai fait vélo » et « J'ai fait course » ouvrent l'app avec
+`?fait=velo|course` ; l'app journalise pour aujourd'hui, affiche « Vélo — noté. »
+et nettoie l'URL (`history.replaceState`) pour interdire la double saisie au
+rechargement. Un type inconnu est ignoré sans erreur. Si la règle des 24h joue,
+son rappel remplace le toast de confirmation (le quota incrémenté confirme déjà).
+Vélo et course seulement : le renfo passe par l'app de toute façon (séance guidée).
+
+**Traits servis.** 4 (temps dans l'app en baisse : la saisie la plus fréquente ne
+demande même plus de naviguer) et 1 (confirmation immédiate).
+**Comportement changé.** Saisie du jour possible en 1 geste depuis l'écran
+d'accueil du téléphone, app refermable aussitôt.
+**Coût d'attention.** Négatif sur le parcours le plus fréquent ; les parcours
+existants sont inchangés au tap près.
+
+**Pré-score : 18/20** (5 + 4 + 4 + 2 + 3) — robustesse à 2 : le support des
+shortcuts dépend du launcher Android (dégradation propre : l'icône ouvre l'app
+normalement).
+
+**Tests.** `?fait=velo` : entrée créée, toast, URL nettoyée, reload sans double
+saisie. `?fait=course` après renfo hier : rappel 24h prioritaire. `?fait=zzz` :
+ignoré. Régression : 31/31. Non vérifiable ici : l'appui long réel sur launcher
+Android (testé via l'URL, qui est le mécanisme sous-jacent).
+
+**Personas.** Idéale : l'app devient quasi invisible (geste unique). Chaotique :
+le rattrapage rétroactif reste dans l'app (les shortcuts ne datent qu'aujourd'hui
+— volontaire : pas de choix de date au niveau OS, trait 2). Fatigue : noter un
+vélo doux coûte un geste. Signal physique : rappel 24h préservé même par ce
+chemin. Hyperfocus : le raccourci évite précisément d'ouvrir-regarder l'app.
+
+**Verdict : gardée.**
