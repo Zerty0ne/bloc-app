@@ -22,12 +22,21 @@
     <div class="bloc-compteur" id="bloc-compteur"></div>
   </header>
 
-  <section class="jauge-wrap">
-    <div class="jauge" id="jauge"></div>
-    <div class="jauge-label" id="jauge-label"></div>
+  <section class="saisie">
+    <div class="eyebrow">J'ai fait…</div>
+    <div class="chips saisie-dates" id="saisie-dates"></div>
+    <div class="saisie-types" id="saisie-types"></div>
+    <div class="saisie-renfo-choix hidden" id="saisie-renfo-choix"></div>
+    <ul class="saisie-entrees" id="saisie-entrees"></ul>
+  </section>
+
+  <section class="quotas-wrap">
+    <div class="eyebrow">Quotas de la semaine</div>
+    <div id="quotas"></div>
   </section>
 
   <section id="semaine-rail" class="semaine-rail"></section>
+  <p class="synthese" id="synthese"></p>
 
   <section class="libres">
     <div class="eyebrow">Séances libres</div>
@@ -81,7 +90,7 @@
     </div>
     <p class="hint">Export mensuel conseillé — localStorage peut être purgé par Android.</p>
   </div>
-  <p class="hint version">Bloc · V1 — programme et séances : fichiers JSON, voir README.</p>
+  <p class="hint version">Bloc · V2 — journal + quotas. Programme et séances : fichiers JSON, voir README.</p>
 </main>
 
 <!-- ===== Navigation basse ===== -->
@@ -92,6 +101,8 @@
   <button data-view="idees" class="tab" aria-label="Idées">Idées</button>
   <button data-view="reglages" class="tab" aria-label="Réglages">Réglages</button>
 </nav>
+
+<div id="toast" class="toast hidden" role="status"></div>
 
 <script src="js/app.js"></script>
 </body>

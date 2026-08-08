@@ -38,14 +38,39 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
 .bloc-compteur { text-align: right; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
 .bloc-compteur strong { color: var(--accent); font-weight: 600; }
 
-/* ---------- Jauge d'adhérence : segments pleins ---------- */
-.jauge-wrap { margin-bottom: 22px; }
-.jauge { display: flex; gap: 6px; height: 14px; }
-.jauge span { flex: 1; border-radius: 5px; background: var(--surface-2); transition: background 0.3s; }
-.jauge span.fait { background: var(--accent); }
-.jauge span.swap { background: var(--swap); }
-.jauge span.minimale { background: var(--accent-dim); box-shadow: inset 0 0 0 2px var(--accent); }
-.jauge-label { margin-top: 8px; font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* ---------- Saisie « J'ai fait… » ---------- */
+.saisie { margin-bottom: 24px; }
+.saisie-dates { margin: 10px 0 12px; }
+.saisie-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.type-btn { min-height: 52px; font-size: 0.88rem; }
+.saisie-renfo-choix { display: flex; gap: 10px; margin-top: 10px; }
+.saisie-renfo-choix .btn { flex: 1; }
+.saisie-entrees { list-style: none; margin-top: 12px; }
+.saisie-entrees li {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border-radius: 12px; padding: 8px 8px 8px 14px;
+  margin-bottom: 6px; font-size: 0.9rem; min-height: 48px;
+}
+.entree-info { flex: 1; min-width: 0; }
+.entree-note { color: var(--muted); font-size: 0.8rem; margin-left: 8px; }
+.entree-note-input {
+  flex: 1; min-height: 40px; background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 10px; color: var(--text); padding: 0 10px; font-family: inherit; font-size: 0.85rem;
+}
+.saisie-entrees .suppr { background: none; border: none; color: var(--muted); cursor: pointer; padding: 12px; font-size: 1rem; }
+
+/* ---------- Quotas de la semaine ---------- */
+.quotas-wrap { margin-bottom: 24px; }
+.quota-ligne { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.quota-label { width: 84px; flex-shrink: 0; font-size: 0.88rem; font-weight: 600; }
+.quota-segments { flex: 1; display: flex; gap: 6px; height: 14px; }
+.quota-segments span { flex: 1; border-radius: 5px; background: var(--surface-2); transition: background 0.3s; }
+.quota-segments span.plein { background: var(--accent); }
+.quota-compte {
+  width: 44px; flex-shrink: 0; text-align: right;
+  font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.quota-extras { margin-top: 10px; font-size: 0.8rem; color: var(--muted); }
 
 /* ---------- Rail de la semaine ---------- */
 .semaine-rail { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
@@ -66,19 +91,17 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
 .jour-info { flex: 1; min-width: 0; }
 .jour-label { font-weight: 600; font-size: 0.98rem; }
 .jour-detail { font-size: 0.8rem; color: var(--muted); margin-top: 3px; line-height: 1.35; }
-.jour-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-
-/* Coche de validation : cible ≥48px */
-.coche {
-  width: 48px; height: 48px; border-radius: 12px;
-  border: 2px solid var(--line); background: transparent;
-  color: transparent; font-size: 1.3rem; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.15s;
+/* Plan indicatif : créneaux couverts + pastilles du journal */
+.jour-carte.cliquable { cursor: pointer; }
+.jour-carte.couvert .jour-label { color: var(--muted); font-weight: 500; }
+.couvert-coche { color: var(--accent-dim); font-size: 0.85rem; }
+.pastilles { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.pastille {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--accent); border: 1px solid var(--accent-dim);
+  padding: 2px 7px; border-radius: 6px;
 }
-.coche.fait { background: var(--accent); border-color: var(--accent); color: #14161a; }
-.coche.swap { background: var(--swap); border-color: var(--swap); color: #14161a; }
-.coche.minimale { background: transparent; border-color: var(--accent); color: var(--accent); }
+.synthese { font-size: 0.85rem; color: var(--muted); margin: -14px 0 26px; font-variant-numeric: tabular-nums; }
 
 .btn {
   min-height: 48px; padding: 0 16px; border-radius: 12px;
@@ -100,11 +123,6 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
   border: 1px dashed var(--line); cursor: pointer; min-height: 60px;
 }
 .libre-carte .jour-detail { max-width: 75%; }
-.badge-bonus {
-  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
-  color: var(--accent); border: 1px solid var(--accent-dim);
-  padding: 3px 8px; border-radius: 6px;
-}
 
 /* ---------- Règles du bloc ---------- */
 .regles { font-size: 0.8rem; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--line); padding-top: 14px; }
@@ -222,6 +240,17 @@ textarea#ressenti {
 }
 .tab.active { color: var(--accent); }
 .tabbar.masquee { display: none; }
+
+/* ---------- Toast (rappel 24h) ---------- */
+.toast {
+  position: fixed; left: 16px; right: 16px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  max-width: 528px; margin: 0 auto;
+  background: var(--surface-2); border: 1px solid var(--accent-dim);
+  border-radius: 12px; padding: 12px 16px;
+  font-size: 0.88rem; line-height: 1.45; color: var(--text);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4); z-index: 10;
+}
 
 /* ---------- Accessibilité ---------- */
 button:focus-visible, input:focus-visible, textarea:focus-visible {

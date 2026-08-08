@@ -24,10 +24,90 @@ const LS = {
 };
 
 function getBlocActif()   { return LS.get("bloc_actif", null); }
-function getValidations() { return LS.get("validations", {}); }
-function getBonus()       { return LS.get("bonus", []); }
+function getJournal()     { return LS.get("journal", []); }
+function setJournal(j)    { LS.set("journal", j); }
 function getCharges()     { return LS.get("charges", {}); }
 function getBacklog()     { return LS.get("backlog_idees", []); }
+
+/* ---------- Migration V1 → V2 : validations/bonus → journal ---------- */
+function typePourSeanceLibre(seanceId) {
+  if (/renfo/.test(seanceId)) return "renfo";
+  if (seanceId === "combat-flow") return "boxe";
+  return "autre";
+}
+
+function migrerV2() {
+  if (LS.get("schema_version", 1) >= 2) return;
+  const journal = getJournal();
+  Object.entries(LS.get("validations", {})).forEach(([date, v]) => {
+    let type = v.type, note = "";
+    if (v.statut === "swap") { type = "velo"; note = "swap course→vélo"; }
+    else if (v.statut === "minimale") note = "séance minimale";
+    if (v.ressenti) note = note ? `${note} — ${v.ressenti}` : v.ressenti;
+    journal.push({ date, type, note });
+  });
+  LS.get("bonus", []).forEach(b => {
+    const nom = state.seances[b.seance_id]?.nom || b.seance_id;
+    journal.push({
+      date: b.date,
+      type: typePourSeanceLibre(b.seance_id),
+      note: b.ressenti ? `${nom} — ${b.ressenti}` : nom,
+    });
+  });
+  journal.sort((a, b) => a.date < b.date ? -1 : 1);
+  setJournal(journal);
+  localStorage.removeItem("bloc.validations");
+  localStorage.removeItem("bloc.bonus");
+  LS.set("schema_version", 2);
+}
+
+/* ---------- Journal : helpers ---------- */
+function typesActivite() { return state.bloc.types_activite || []; }
+function quotasHebdo()   { return state.bloc.quotas_hebdo || {}; }
+function labelType(id)   { return (typesActivite().find(t => t.id === id) || {}).label || id; }
+
+/* Entrées de la semaine [lundi, lundi+6], avec leur index dans le journal */
+function entreesSemaine(lundi) {
+  const debut = isoDate(lundi), fin = isoDate(addJours(lundi, 6));
+  return getJournal().map((e, idx) => ({ ...e, idx }))
+    .filter(e => e.date >= debut && e.date <= fin);
+}
+function comptesParType(entrees) {
+  const c = {};
+  entrees.forEach(e => { c[e.type] = (c[e.type] || 0) + 1; });
+  return c;
+}
+
+function ajouterEntree(date, type, note = "") {
+  signalerRegle24h(date, type);
+  const j = getJournal();
+  j.push({ date, type, note });
+  setJournal(j);
+}
+function supprimerEntree(idx) {
+  const j = getJournal();
+  j.splice(idx, 1);
+  setJournal(j);
+}
+
+/* Règle des 24h — signal, jamais un blocage */
+function signalerRegle24h(date, type) {
+  const autre = type === "course" ? "renfo" : type === "renfo" ? "course" : null;
+  if (!autre) return;
+  const d = new Date(date + "T00:00:00");
+  const proches = [isoDate(addJours(d, -1)), date, isoDate(addJours(d, 1))];
+  if (getJournal().some(e => e.type === autre && proches.includes(e.date)))
+    toast("Rappel : ta règle — course et renfo jambes à 24h d'écart.");
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.remove("hidden");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add("hidden"), 6000);
+}
 
 /* ---------- Dates (semaine = lundi → dimanche) ---------- */
 function isoDate(d) {
@@ -60,9 +140,10 @@ async function init() {
     LS.set("bloc_actif", actif);
   }
 
-  // Séances de la semaine type (renfo) + libres
+  // Séances de la semaine type + types d'activité (renfo) + libres
   const ids = new Set();
   state.bloc.semaine_type.forEach(j => { if (j.seance_id) ids.add(j.seance_id); });
+  (state.bloc.types_activite || []).forEach(t => { if (t.seance_id) ids.add(t.seance_id); });
   for (const id of ids) state.seances[id] = await chargerJSON(`seances/${id}.json`);
   for (const path of state.config.seances_libres) {
     const s = await chargerJSON(path);
@@ -80,6 +161,8 @@ async function init() {
     try { state.exercices[id] = await chargerJSON(`exercices/${id}.json`); }
     catch { state.exercices[id] = { id, nom: id, images: [], rappel_technique: "", pourquoi: "" }; }
   }));
+
+  migrerV2();
 
   brancherNavigation();
   brancherReglages();
@@ -110,9 +193,10 @@ function brancherNavigation() {
 }
 
 /* ============================================================
-   ACCUEIL — la semaine
+   ACCUEIL — saisie « J'ai fait… », quotas, plan indicatif
    ============================================================ */
-function statutDuJour(dateIso) { return (getValidations()[dateIso] || null); }
+let saisieDate = null;        // date ISO ciblée par la saisie (défaut : aujourd'hui)
+let choixSeanceType = null;   // type dont le choix guidée/noter est déplié
 
 function numeroSemaine() {
   const debut = new Date(getBlocActif().date_debut + "T00:00:00");
@@ -124,6 +208,12 @@ function joursAvantBlocSuivant() {
   return Math.max(state.bloc.duree_semaines * 7 - joursEntre(debut, new Date()), 0);
 }
 
+function fmtDateCourte(iso) {
+  const d = new Date(iso + "T00:00:00");
+  const jours = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+  return `${jours[d.getDay()]} ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
+
 function rendreAccueil() {
   document.getElementById("bloc-nom").textContent = state.bloc.nom;
   const compteur = document.getElementById("bloc-compteur");
@@ -132,84 +222,12 @@ function rendreAccueil() {
     `Semaine <strong>${numeroSemaine()}/${state.bloc.duree_semaines}</strong><br>` +
     (restant > 0 ? `Bloc 2 dans <strong>${restant} j</strong>` : `Bloc terminé — bilan !`);
 
-  const lundi = lundiDe(new Date());
-  const aujourdhui = isoDate(new Date());
-  const rail = document.getElementById("semaine-rail");
-  rail.innerHTML = "";
+  if (!saisieDate) saisieDate = isoDate(new Date());
+  rendreSaisie();
+  rendreQuotas();
+  rendreRail();
 
-  const actifs = state.bloc.semaine_type.filter(j => j.type !== "repos");
-  let faits = 0;
-  const segments = [];
-
-  state.bloc.semaine_type.forEach((j, idx) => {
-    const dateIso = isoDate(addJours(lundi, idx));
-    const val = statutDuJour(dateIso);
-    const estRepos = j.type === "repos";
-
-    const carte = document.createElement("div");
-    carte.className = "jour-carte" + (dateIso === aujourdhui ? " aujourdhui" : "") + (estRepos ? " repos" : "");
-    carte.innerHTML = `
-      <div class="jour-lettre">${j.jour.slice(0, 3)}</div>
-      <div class="jour-info">
-        <div class="jour-label">${j.label || "Repos"}</div>
-        ${j.detail ? `<div class="jour-detail">${j.detail}</div>` : ""}
-      </div>`;
-
-    if (!estRepos) {
-      const actions = document.createElement("div");
-      actions.className = "jour-actions";
-
-      // Coche de validation (tap = fait / re-tap = annule)
-      const coche = document.createElement("button");
-      coche.className = "coche" + (val ? " " + val.statut : "");
-      coche.textContent = val ? (val.statut === "swap" ? "⇄" : "✓") : "✓";
-      coche.setAttribute("aria-label", val ? "Annuler la validation" : "Valider la séance");
-      coche.addEventListener("click", () => {
-        const v = getValidations();
-        if (v[dateIso]) delete v[dateIso];
-        else v[dateIso] = { type: j.type, statut: "fait" };
-        LS.set("validations", v); rendreAccueil();
-      });
-      actions.appendChild(coche);
-
-      // Swap course → vélo doux (règle du lendemain)
-      if (j.type === "course" && (!val || val.statut !== "swap")) {
-        const swap = document.createElement("button");
-        swap.className = "btn btn-petit";
-        swap.textContent = "→ vélo doux";
-        swap.addEventListener("click", () => {
-          const v = getValidations();
-          v[dateIso] = { type: "velo", statut: "swap" };
-          LS.set("validations", v); rendreAccueil();
-        });
-        actions.appendChild(swap);
-      }
-
-      // Lancement de la séance renfo
-      if (j.seance_id) {
-        const go = document.createElement("button");
-        go.className = "btn btn-petit btn-accent";
-        go.textContent = "Lancer";
-        go.addEventListener("click", () =>
-          lancerSeance(state.seances[j.seance_id], { source: "programme", date: dateIso }));
-        actions.appendChild(go);
-      }
-      carte.appendChild(actions);
-
-      if (val) faits++;
-      segments.push(val ? val.statut : "");
-    }
-    rail.appendChild(carte);
-  });
-
-  // Jauge segmentée
-  const jauge = document.getElementById("jauge");
-  jauge.innerHTML = segments.map(s => `<span class="${s}"></span>`).join("");
-  document.getElementById("jauge-label").textContent =
-    `${faits}/${actifs.length} séances cette semaine`;
-
-  // Séances libres + marqueur bonus du jour
-  const bonusAujourdhui = getBonus().filter(b => b.date === aujourdhui).map(b => b.seance_id);
+  // Séances libres — la fin de séance crée l'entrée de journal
   const liste = document.getElementById("libres-liste");
   liste.innerHTML = "";
   state.libres.forEach(s => {
@@ -219,15 +237,208 @@ function rendreAccueil() {
       <div class="jour-info">
         <div class="jour-label">${s.nom}</div>
         <div class="jour-detail">${s.description || ""}</div>
-      </div>
-      ${bonusAujourdhui.includes(s.id) ? `<span class="badge-bonus">Bonus ✓</span>` : ""}`;
-    c.addEventListener("click", () => lancerSeance(s, { source: "libre" }));
+      </div>`;
+    c.addEventListener("click", () =>
+      lancerSeance(s, { type: typePourSeanceLibre(s.id), estLibre: true, date: isoDate(new Date()) }));
     liste.appendChild(c);
   });
 
   // Règles du bloc
   document.getElementById("regles").innerHTML =
     `<ul>${state.bloc.regles.map(r => `<li>${r}</li>`).join("")}</ul>`;
+}
+
+/* ----- Saisie « J'ai fait… » ----- */
+function rendreSaisie() {
+  const auj = isoDate(new Date());
+  const hier = isoDate(addJours(new Date(), -1));
+
+  // Sélecteur de date : Aujourd'hui / Hier (+ date du rail si autre)
+  const dates = document.getElementById("saisie-dates");
+  dates.innerHTML = "";
+  const choix = [["Aujourd'hui", auj], ["Hier", hier]];
+  if (saisieDate !== auj && saisieDate !== hier) choix.push([fmtDateCourte(saisieDate), saisieDate]);
+  choix.forEach(([label, d]) => {
+    const b = document.createElement("button");
+    b.className = "chip" + (saisieDate === d ? " active" : "");
+    b.textContent = label;
+    b.addEventListener("click", () => { saisieDate = d; choixSeanceType = null; rendreAccueil(); });
+    dates.appendChild(b);
+  });
+
+  // Boutons-types
+  const types = document.getElementById("saisie-types");
+  types.innerHTML = "";
+  typesActivite().forEach(t => {
+    const b = document.createElement("button");
+    b.className = "btn type-btn";
+    b.textContent = t.label;
+    b.addEventListener("click", () => {
+      if (t.seance_id) { choixSeanceType = choixSeanceType === t.id ? null : t.id; rendreAccueil(); }
+      else { ajouterEntree(saisieDate, t.id); rendreAccueil(); }
+    });
+    types.appendChild(b);
+  });
+
+  // Choix guidée / juste noter (types avec séance, ex. renfo)
+  const zone = document.getElementById("saisie-renfo-choix");
+  zone.classList.toggle("hidden", !choixSeanceType);
+  zone.innerHTML = "";
+  if (choixSeanceType) {
+    const t = typesActivite().find(x => x.id === choixSeanceType);
+    const guide = document.createElement("button");
+    guide.className = "btn btn-accent";
+    guide.textContent = "Séance guidée";
+    guide.addEventListener("click", () => {
+      const d = saisieDate;
+      choixSeanceType = null;
+      lancerSeance(state.seances[t.seance_id], { type: t.id, date: d });
+    });
+    const noter = document.createElement("button");
+    noter.className = "btn";
+    noter.textContent = "Juste noter";
+    noter.addEventListener("click", () => {
+      choixSeanceType = null;
+      ajouterEntree(saisieDate, t.id);
+      rendreAccueil();
+    });
+    zone.appendChild(guide);
+    zone.appendChild(noter);
+  }
+
+  // Entrées du jour sélectionné — suppression en un tap, note éditable
+  const liste = document.getElementById("saisie-entrees");
+  liste.innerHTML = "";
+  const jour = getJournal().map((e, idx) => ({ ...e, idx })).filter(e => e.date === saisieDate);
+  jour.forEach(e => {
+    const li = document.createElement("li");
+    const info = document.createElement("span");
+    info.className = "entree-info";
+    const nom = document.createElement("strong");
+    nom.textContent = labelType(e.type);
+    info.appendChild(nom);
+    if (e.note) {
+      const note = document.createElement("span");
+      note.className = "entree-note";
+      note.textContent = e.note;
+      info.appendChild(note);
+    }
+    li.appendChild(info);
+
+    const edit = document.createElement("button");
+    edit.className = "suppr";
+    edit.textContent = "✎";
+    edit.setAttribute("aria-label", "Modifier la note");
+    edit.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "text"; input.maxLength = 120;
+      input.value = e.note || "";
+      input.placeholder = "Note (optionnel)";
+      input.className = "entree-note-input";
+      li.replaceChild(input, info);
+      edit.remove();
+      input.focus();
+      input.addEventListener("keydown", ev => { if (ev.key === "Enter") input.blur(); });
+      input.addEventListener("blur", () => {
+        const j = getJournal();
+        j[e.idx].note = input.value.trim();
+        setJournal(j);
+        rendreAccueil();
+      });
+    });
+    li.appendChild(edit);
+
+    const suppr = document.createElement("button");
+    suppr.className = "suppr";
+    suppr.textContent = "✕";
+    suppr.setAttribute("aria-label", "Supprimer l'entrée");
+    suppr.addEventListener("click", () => { supprimerEntree(e.idx); rendreAccueil(); });
+    li.appendChild(suppr);
+    liste.appendChild(li);
+  });
+}
+
+/* ----- Quotas de la semaine ----- */
+function rendreQuotas() {
+  const cont = document.getElementById("quotas");
+  cont.innerHTML = "";
+  const counts = comptesParType(entreesSemaine(lundiDe(new Date())));
+  const quotas = quotasHebdo();
+
+  Object.entries(quotas).forEach(([type, quota]) => {
+    const n = counts[type] || 0;
+    const ligne = document.createElement("div");
+    ligne.className = "quota-ligne";
+    ligne.innerHTML = `
+      <span class="quota-label">${labelType(type)}</span>
+      <span class="quota-segments">${Array.from({ length: quota }, (_, i) =>
+        `<span class="${i < Math.min(n, quota) ? "plein" : ""}"></span>`).join("")}</span>
+      <span class="quota-compte">${n}/${quota}</span>`;
+    cont.appendChild(ligne);
+  });
+
+  const extras = Object.entries(counts).filter(([t]) => !(t in quotas))
+    .reduce((s, [, n]) => s + n, 0);
+  if (extras) {
+    const p = document.createElement("p");
+    p.className = "quota-extras";
+    p.textContent = `Extras : ${extras}`;
+    cont.appendChild(p);
+  }
+}
+
+/* ----- Rail de la semaine : plan indicatif ----- */
+function rendreRail() {
+  const lundi = lundiDe(new Date());
+  const aujourdhui = isoDate(new Date());
+  const semaine = entreesSemaine(lundi);
+  const counts = comptesParType(semaine);
+  const quotas = quotasHebdo();
+  const rail = document.getElementById("semaine-rail");
+  rail.innerHTML = "";
+
+  state.bloc.semaine_type.forEach((j, idx) => {
+    const dateIso = isoDate(addJours(lundi, idx));
+    const estRepos = j.type === "repos";
+    const entreesJour = semaine.filter(e => e.date === dateIso);
+    const couvert = !estRepos && (
+      (j.type in quotas && (counts[j.type] || 0) >= quotas[j.type]) ||
+      entreesJour.some(e => e.type === j.type));
+
+    const carte = document.createElement("div");
+    carte.className = "jour-carte"
+      + (dateIso === aujourdhui ? " aujourdhui" : "")
+      + (estRepos ? " repos" : "")
+      + (couvert ? " couvert" : "");
+    carte.innerHTML = `
+      <div class="jour-lettre">${j.jour.slice(0, 3)}</div>
+      <div class="jour-info">
+        <div class="jour-label">${j.label || "Repos"}${couvert ? ` <span class="couvert-coche">✓</span>` : ""}</div>
+        ${j.detail ? `<div class="jour-detail">${j.detail}</div>` : ""}
+        ${entreesJour.length ? `<div class="pastilles">${entreesJour.map(e =>
+          `<span class="pastille">${labelType(e.type)}</span>`).join("")}</div>` : ""}
+      </div>`;
+
+    // Tap sur un jour passé ou courant = saisie pré-réglée sur cette date
+    if (dateIso <= aujourdhui) {
+      carte.classList.add("cliquable");
+      carte.addEventListener("click", () => {
+        saisieDate = dateIso;
+        choixSeanceType = null;
+        rendreAccueil();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
+    rail.appendChild(carte);
+  });
+
+  // Synthèse : quotas − journal
+  const restes = Object.entries(quotas)
+    .map(([t, q]) => [t, Math.max(q - (counts[t] || 0), 0)])
+    .filter(([, r]) => r > 0);
+  document.getElementById("synthese").textContent = restes.length
+    ? "Reste cette semaine : " + restes.map(([t, r]) => `${r} ${labelType(t).toLowerCase()}`).join(" · ")
+    : "Semaine couverte.";
 }
 
 /* ============================================================
@@ -464,20 +675,13 @@ function rendreFin() {
     });
     LS.set("charges", charges);
 
-    // Validation programme ou bonus libre
-    if (seanceCtx.source === "programme") {
-      const v = getValidations();
-      v[seanceCtx.date] = {
-        type: "renfo",
-        statut: seanceCtx.minimale ? "minimale" : "fait",
-        ...(ressenti ? { ressenti } : {}),
-      };
-      LS.set("validations", v);
-    } else {
-      const b = getBonus();
-      b.push({ date: dateIso, seance_id: seanceCtx.seance.id, ...(ressenti ? { ressenti } : {}) });
-      LS.set("bonus", b);
-    }
+    // Entrée de journal (type et date posés au lancement de la séance)
+    const date = seanceCtx.date || dateIso;
+    const morceaux = [];
+    if (seanceCtx.estLibre) morceaux.push(seanceCtx.seance.nom);
+    if (seanceCtx.minimale) morceaux.push("séance minimale");
+    if (ressenti) morceaux.push(ressenti);
+    ajouterEntree(date, seanceCtx.type || "autre", morceaux.join(" — "));
     quitterSeance();
   });
 }
@@ -557,39 +761,30 @@ function dessinerCourbe(canvas, points) {
 }
 
 /* ============================================================
-   BILAN HEBDO — zéro saisie
+   BILAN HEBDO — quotas, zéro saisie
    ============================================================ */
 function statsSemaine(lundi) {
-  const v = getValidations();
-  const actifs = state.bloc.semaine_type.filter(j => j.type !== "repos").length;
-  let faits = 0, swaps = 0, minimales = 0;
-  const parType = {};
-  state.bloc.semaine_type.forEach((j, idx) => {
-    if (j.type === "repos") return;
-    const val = v[isoDate(addJours(lundi, idx))];
-    if (val) {
-      faits++;
-      if (val.statut === "swap") swaps++;
-      if (val.statut === "minimale") minimales++;
-      parType[val.type] = (parType[val.type] || 0) + 1;
-    }
-  });
-  return { faits, actifs, swaps, minimales, parType, pct: Math.round(faits / actifs * 100) };
+  const counts = comptesParType(entreesSemaine(lundi));
+  const quotas = quotasHebdo();
+  const cles = Object.keys(quotas);
+  // % = moyenne des taux de couverture par type, plafonnés à 100 % chacun
+  const taux = cles.length
+    ? cles.reduce((s, t) => s + Math.min((counts[t] || 0) / quotas[t], 1), 0) / cles.length
+    : 0;
+  const extras = {};
+  Object.entries(counts).forEach(([t, n]) => { if (!(t in quotas)) extras[t] = n; });
+  return { counts, quotas, extras, pct: Math.round(taux * 100) };
 }
 
 function rendreBilan() {
   const lundi = lundiDe(new Date());
   const cette = statsSemaine(lundi);
+  const prec = statsSemaine(addJours(lundi, -7));
   const cont = document.getElementById("bilan-contenu");
 
   // Tendance 4 semaines (barres)
   const tendance = [];
   for (let i = 3; i >= 0; i--) tendance.push(statsSemaine(addJours(lundi, -7 * i)));
-
-  // Bonus de la semaine
-  const finSemaine = isoDate(addJours(lundi, 6));
-  const debutSemaine = isoDate(lundi);
-  const bonusSemaine = getBonus().filter(b => b.date >= debutSemaine && b.date <= finSemaine);
 
   // Charges : dernière valeur vs précédente, par exercice
   const charges = getCharges();
@@ -600,21 +795,16 @@ function rendreBilan() {
       <span class="val">${d.kg} kg${delta ? ` (${delta > 0 ? "+" : ""}${delta.toFixed(1)})` : ""}</span></div>`;
   }).join("");
 
-  const typesLabels = { velo: "Vélo", course: "Course", renfo: "Renfo" };
+  const lignesExtras = Object.entries(cette.extras).map(([t, n]) =>
+    `<div class="bilan-ligne"><span>${labelType(t)}</span><span class="val">${n}</span></div>`).join("");
+
   cont.innerHTML = `
     <div class="bilan-carte">
-      <h3>Adhérence cette semaine</h3>
-      <div class="bilan-grand">${cette.faits}/${cette.actifs} <small>(${cette.pct} %)</small></div>
-      ${cette.swaps ? `<p class="hint">${cette.swaps} swap${cette.swaps > 1 ? "s" : ""} course→vélo — la règle appliquée, pas un échec.</p>` : ""}
-      ${cette.minimales ? `<p class="hint">${cette.minimales} séance${cette.minimales > 1 ? "s" : ""} minimale${cette.minimales > 1 ? "s" : ""} — validée${cette.minimales > 1 ? "s" : ""} comme complète${cette.minimales > 1 ? "s" : ""}.</p>` : ""}
-    </div>
-    <div class="bilan-carte">
-      <h3>Par type</h3>
-      ${Object.entries(cette.parType).map(([t, n]) =>
-        `<div class="bilan-ligne"><span>${typesLabels[t] || t}</span><span class="val">${n}</span></div>`).join("")
-        || `<p class="hint">Rien de coché encore cette semaine.</p>`}
-      ${bonusSemaine.length ? `<div class="bilan-ligne"><span>Bonus (hors jauge)</span>
-        <span class="val">${bonusSemaine.length}</span></div>` : ""}
+      <h3>Quotas</h3>
+      ${Object.entries(cette.quotas).map(([t, q]) =>
+        `<div class="bilan-ligne"><span>${labelType(t)}</span>
+          <span class="val">${cette.counts[t] || 0}/${q} <small>(${prec.counts[t] || 0}/${q})</small></span></div>`).join("")}
+      <p class="hint">Entre parenthèses : semaine précédente.</p>
     </div>
     <div class="bilan-carte">
       <h3>Tendance 4 semaines</h3>
@@ -622,7 +812,11 @@ function rendreBilan() {
         ${tendance.map((s, i) => `<div style="height:${Math.max(s.pct, 4)}%"
           class="${i === 3 ? "actuelle" : ""}"><span>S${numeroSemaine() - (3 - i)}</span></div>`).join("")}
       </div>
-      <p class="hint" style="margin-top:26px">Hauteur = % d'adhérence de la semaine.</p>
+      <p class="hint" style="margin-top:26px">Hauteur = couverture moyenne des quotas (plafonnée à 100 % par type).</p>
+    </div>
+    <div class="bilan-carte">
+      <h3>Extras</h3>
+      ${lignesExtras || `<p class="hint">Aucun extra cette semaine.</p>`}
     </div>
     ${lignesCharges ? `<div class="bilan-carte"><h3>Charges — dernière vs précédente</h3>${lignesCharges}</div>` : ""}`;
 }
@@ -672,10 +866,10 @@ function brancherReglages() {
   });
   document.getElementById("btn-export").addEventListener("click", () => {
     const data = {
-      version: 1,
+      version: 2,
+      schema_version: 2,
       bloc_actif: getBlocActif(),
-      validations: getValidations(),
-      bonus: getBonus(),
+      journal: getJournal(),
       charges: getCharges(),
       backlog_idees: getBacklog(),
     };
@@ -695,9 +889,20 @@ function brancherReglages() {
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result);
-        ["bloc_actif", "validations", "bonus", "charges", "backlog_idees"].forEach(k => {
+        ["bloc_actif", "charges", "backlog_idees"].forEach(k => {
           if (data[k] !== undefined) LS.set(k, data[k]);
         });
+        if (data.journal !== undefined) {
+          setJournal(data.journal);
+          LS.set("schema_version", 2);
+        } else {
+          // Export V1 : restaurer validations/bonus puis passer par la migration
+          localStorage.removeItem("bloc.journal");
+          LS.set("validations", data.validations || {});
+          LS.set("bonus", data.bonus || []);
+          LS.set("schema_version", 1);
+          migrerV2();
+        }
         alert("Import réussi.");
         rendreAccueil();
       } catch { alert("Fichier illisible — export Bloc attendu."); }
