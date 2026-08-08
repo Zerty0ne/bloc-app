@@ -256,3 +256,21 @@ ne pas récompenser ; robustesse : 3 ; réversibilité : 3). L'archéologie de s
 propre journal est l'hyperfocus déguisé en vertu.
 
 **Verdict : abandonnée** (score < 12).
+
+---
+
+## Clôture de boucle
+
+**Bilan : 6 gardées, 4 abandonnées, 0 revertée.** Aucun tap ajouté à aucun parcours
+existant sur l'ensemble de la boucle ; la saisie du jour reste à 2 taps (1 geste via
+raccourci OS). Cache service worker : `bloc-v3` → `bloc-v4` (bump unique de fin de
+boucle ; liste `FICHIERS` revérifiée contre l'arborescence — aucun fichier applicatif
+ajouté ni retiré, `CHANGELOG-V3.md` volontairement hors précache comme le README).
+
+**Validation finale.** Régression complète 31/31 (saisie multi-entrées, 2 taps,
+quotas, séance guidée intégrale, migration V1→V2 non régressée, export/import,
+offline `bloc-v4` réseau coupé), scénarios de lecture du bilan, raccourcis OS,
+et les cinq semaines-personas rejouées sur la build finale : vocabulaire propre
+partout (scan automatique des termes punitifs), et en semaine d'hyperfocus cinq
+consultations successives produisent un contenu strictement identique — rien dans
+l'app ne récompense la consultation.
