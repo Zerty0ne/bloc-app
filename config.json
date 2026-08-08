@@ -1,0 +1,7 @@
+{
+  "bloc_actif_fichier": "blocs/bloc-1.json",
+  "seances_libres": [
+    "seances/libres/tibetains-matin.json",
+    "seances/libres/combat-flow.json"
+  ]
+}
