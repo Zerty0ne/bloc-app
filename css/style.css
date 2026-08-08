@@ -10,7 +10,7 @@
   --muted: #8b8f97;
   --accent: #e2a63d;        /* ambre : action, validation, jauge */
   --accent-dim: #6b5325;
-  --swap: #5aa8a0;          /* sarcelle discret : séance swappée */
+  --swap: #5aa8a0;          /* sarcelle discret : pastille « signal » */
   --radius: 14px;
   font-size: 17px;
 }
@@ -107,6 +107,7 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
   color: var(--accent); border: 1px solid var(--accent-dim);
   padding: 2px 7px; border-radius: 6px;
 }
+.pastille.signal { color: var(--swap); border-color: #3a6a65; }
 .ligne-jour {
   font-size: 0.9rem; color: var(--muted); line-height: 1.5;
   margin: -6px 0 18px; font-variant-numeric: tabular-nums;
@@ -208,6 +209,19 @@ textarea#ressenti {
 .bilan-grand { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .bilan-grand small { font-size: 1rem; color: var(--muted); font-weight: 400; }
 .lecture { font-size: 0.95rem; line-height: 1.55; }
+.bilan-bloc { border: 1px solid var(--accent-dim); }
+.bilan-bloc .lecture { margin-bottom: 10px; }
+.bilan-sous-titre {
+  font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--muted); margin: 14px 0 6px;
+}
+.fin-bloc-carte {
+  background: var(--surface); border: 1px solid var(--accent-dim);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 22px;
+}
+.fin-bloc-carte p { font-size: 0.95rem; line-height: 1.5; }
+.fin-bloc-carte .btn { width: 100%; margin: 12px 0 4px; }
+.fin-bloc-carte code { font-size: 0.8rem; color: var(--text); }
 .bilan-ligne { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
 .bilan-ligne:last-child { border-bottom: none; }
 .bilan-ligne .val { font-variant-numeric: tabular-nums; font-weight: 600; }

@@ -68,6 +68,8 @@ function migrerV2() {
 function typesActivite() { return state.bloc.types_activite || []; }
 function quotasHebdo()   { return state.bloc.quotas_hebdo || {}; }
 function labelType(id)   { return (typesActivite().find(t => t.id === id) || {}).label || id; }
+/* Un « signal » (gêne, repos forcé) : ni quota, ni extra — compté à part. */
+function estSignal(id)   { return !!(typesActivite().find(t => t.id === id) || {}).signal; }
 
 /* Entrées de la semaine [lundi, lundi+6], avec leur index dans le journal */
 function entreesSemaine(lundi) {
@@ -102,8 +104,13 @@ function signalerRegle24h(date, type) {
   if (!autre) return;
   const d = new Date(date + "T00:00:00");
   const proches = [isoDate(addJours(d, -1)), date, isoDate(addJours(d, 1))];
-  if (getJournal().some(e => e.type === autre && proches.includes(e.date)))
-    toast("Rappel : ta règle — course et renfo jambes à 24h d'écart.");
+  const journal = getJournal();
+  if (journal.some(e => e.type === autre && proches.includes(e.date))) {
+    const recents = [isoDate(addJours(d, -2)), ...proches];
+    const signalRecent = journal.some(e => estSignal(e.type) && recents.includes(e.date));
+    toast("Rappel : ta règle — course et renfo jambes à 24h d'écart." +
+      (signalRecent ? " Et un signal est noté ces jours-ci." : ""));
+  }
 }
 
 let toastTimer = null;
@@ -229,6 +236,16 @@ function joursAvantBlocSuivant() {
   const debut = new Date(getBlocActif().date_debut + "T00:00:00");
   return Math.max(state.bloc.duree_semaines * 7 - joursEntre(debut, new Date()), 0);
 }
+/* > 0 si date_debut est dans le futur : état « bloc à venir » */
+function joursAvantDebut() {
+  const debut = new Date(getBlocActif().date_debut + "T00:00:00");
+  return Math.max(joursEntre(new Date(), debut), 0);
+}
+/* Dernière semaine entamée ou bloc fini : le bilan de bloc est accessible */
+function blocEnCloture() {
+  return joursAvantDebut() === 0 &&
+    (numeroSemaine() >= state.bloc.duree_semaines || joursAvantBlocSuivant() === 0);
+}
 
 function fmtJJMM(iso) { return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`; }
 
@@ -242,9 +259,25 @@ function rendreAccueil() {
   document.getElementById("bloc-nom").textContent = state.bloc.nom;
   const compteur = document.getElementById("bloc-compteur");
   const restant = joursAvantBlocSuivant();
-  compteur.innerHTML =
-    `Semaine <strong>${numeroSemaine()}/${state.bloc.duree_semaines}</strong><br>` +
-    (restant > 0 ? `Bloc 2 dans <strong>${restant} j</strong>` : `Bloc terminé — bilan !`);
+  const avant = joursAvantDebut();
+  compteur.innerHTML = avant > 0
+    ? `Le bloc démarre<br>dans <strong>${avant} j</strong>`
+    : `Semaine <strong>${numeroSemaine()}/${state.bloc.duree_semaines}</strong><br>` +
+      (restant > 0 ? `Bloc 2 dans <strong>${restant} j</strong>` : `Bloc terminé — bilan !`);
+
+  // Fin de bloc : le bilan devient le point d'entrée, l'app reste utilisable
+  const fin = document.getElementById("fin-bloc");
+  if (avant === 0 && restant === 0) {
+    fin.innerHTML = `
+      <div class="fin-bloc-carte">
+        <p><strong>Bloc terminé.</strong> Le bloc 2 se construit à partir de ce bilan.</p>
+        <button class="btn btn-accent" id="voir-bilan-bloc">Voir le bilan de bloc</button>
+        <p class="hint">Marche à suivre (README) : créer <code>blocs/bloc-2.json</code>,
+        le pointer dans <code>config.json</code>, régénérer le service worker.
+        Le journal et les quotas continuent en attendant.</p>
+      </div>`;
+    document.getElementById("voir-bilan-bloc").addEventListener("click", () => afficherVue("bilan"));
+  } else fin.innerHTML = "";
 
   if (!saisieDate) saisieDate = isoDate(new Date());
   rendreLigneJour();
@@ -277,7 +310,7 @@ function rendreAccueil() {
     })));
   document.getElementById("regles").innerHTML =
     `<ul>${state.bloc.regles.map(r => `<li>${r}</li>`).join("")}</ul>` +
-    (restant > 0 && deverrouillages.length
+    (avant === 0 && restant > 0 && deverrouillages.length
       ? `<p class="prochain-bloc">Bloc ${blocNum + 1} dans ${restant} j — débloque : ${deverrouillages.join(" · ")}.</p>`
       : "");
 }
@@ -293,6 +326,12 @@ function resteTexte(counts) {
 }
 
 function rendreLigneJour() {
+  const ligne = document.getElementById("ligne-jour");
+  const avant = joursAvantDebut();
+  if (avant > 0) {   // bloc à venir : pas de « reste » avant le départ
+    ligne.innerHTML = `Le bloc démarre dans <strong>${avant} j</strong> — le journal compte déjà.`;
+    return;
+  }
   const aujourdhui = isoDate(new Date());
   const plan = state.bloc.semaine_type[(new Date().getDay() + 6) % 7];
   const counts = comptesParType(entreesSemaine(lundiDe(new Date())));
@@ -300,7 +339,7 @@ function rendreLigneJour() {
   const couvert = plan.type !== "repos" && (
     (plan.type in quotas && (counts[plan.type] || 0) >= quotas[plan.type]) ||
     getJournal().some(e => e.date === aujourdhui && e.type === plan.type));
-  document.getElementById("ligne-jour").innerHTML =
+  ligne.innerHTML =
     `Aujourd'hui : <strong>${plan.label || "Repos"}</strong>${couvert ? " ✓" : ""} — ${resteTexte(counts)}.`;
 }
 
@@ -435,12 +474,15 @@ function rendreQuotas() {
   });
   flashType = null;
 
-  const extras = Object.entries(counts).filter(([t]) => !(t in quotas))
+  const extras = Object.entries(counts).filter(([t]) => !(t in quotas) && !estSignal(t))
     .reduce((s, [, n]) => s + n, 0);
-  if (extras) {
+  const signaux = Object.entries(counts).filter(([t]) => estSignal(t))
+    .reduce((s, [, n]) => s + n, 0);
+  if (extras || signaux) {
     const p = document.createElement("p");
     p.className = "quota-extras";
-    p.textContent = `Extras : ${extras}`;
+    p.textContent = [extras ? `Extras : ${extras}` : "", signaux ? `Signal : ${signaux}` : ""]
+      .filter(Boolean).join(" · ");
     cont.appendChild(p);
   }
 }
@@ -474,7 +516,7 @@ function rendreRail() {
         <div class="jour-label">${j.label || "Repos"}${couvert ? ` <span class="couvert-coche">✓</span>` : ""}</div>
         ${j.detail ? `<div class="jour-detail">${j.detail}</div>` : ""}
         ${entreesJour.length ? `<div class="pastilles">${entreesJour.map(e =>
-          `<span class="pastille">${labelType(e.type)}</span>`).join("")}</div>` : ""}
+          `<span class="pastille${estSignal(e.type) ? " signal" : ""}">${labelType(e.type)}</span>`).join("")}</div>` : ""}
       </div>`;
 
     // Tap sur un jour passé ou courant = saisie pré-réglée sur cette date
@@ -836,8 +878,12 @@ function statsSemaine(lundi) {
     ? cles.reduce((s, t) => s + Math.min((counts[t] || 0) / quotas[t], 1), 0) / cles.length
     : 0;
   const extras = {};
-  Object.entries(counts).forEach(([t, n]) => { if (!(t in quotas)) extras[t] = n; });
-  return { counts, quotas, extras, pct: Math.round(taux * 100) };
+  let signaux = 0;
+  Object.entries(counts).forEach(([t, n]) => {
+    if (estSignal(t)) signaux += n;
+    else if (!(t in quotas)) extras[t] = n;
+  });
+  return { counts, quotas, extras, signaux, pct: Math.round(taux * 100) };
 }
 
 /* Lecture de la semaine : 1-2 phrases par règles simples, ton factuel.
@@ -849,7 +895,9 @@ function lectureSemaine(cette, entrees) {
   const extrasN = Object.values(cette.extras).reduce((a, b) => a + b, 0);
   const jourIdx = (new Date().getDay() + 6) % 7;   // 0 = lundi
 
-  if (!entrees.length) {
+  if (joursAvantDebut() > 0) {
+    phrases.push("Le bloc n'a pas commencé — chaque sortie d'ici là compte déjà au journal.");
+  } else if (!entrees.length) {
     phrases.push(jourIdx <= 2
       ? "Rien de noté pour l'instant — la semaine commence."
       : "Peu d'entrées cette semaine — lundi remet les compteurs à zéro.");
@@ -860,6 +908,13 @@ function lectureSemaine(cette, entrees) {
     phrases.push(`${done.map(labelType).join(" et ")} couvert${done.length > 1 ? "s" : ""}, le reste de la semaine est ouvert.`);
   } else {
     phrases.push(`${entrees.length} entrée${entrees.length > 1 ? "s" : ""} posée${entrees.length > 1 ? "s" : ""} sur la semaine.`);
+  }
+
+  // Un signal + des quotas partiels = prudence appliquée, jamais un manque
+  if (cette.signaux) {
+    const partiels = done.length < cles.length;
+    phrases.push(`${cette.signaux} signal${cette.signaux > 1 ? "s" : ""} noté${cette.signaux > 1 ? "s" : ""}` +
+      (partiels ? " — les quotas restés ouverts sont de la prudence appliquée." : " cette semaine."));
   }
 
   const minimales = entrees.filter(e => (e.note || "").includes("séance minimale")).length;
@@ -876,6 +931,74 @@ function lectureSemaine(cette, entrees) {
     `${extrasN} extra${extrasN > 1 ? "s" : ""} hors quotas (${Object.keys(cette.extras).map(labelType).join(", ")}).`);
 
   return phrases.slice(0, 2).join(" ");
+}
+
+/* ---------- Bilan de bloc : rétrospective des N semaines, zéro saisie ---------- */
+function statsBloc() {
+  const duree = state.bloc.duree_semaines;
+  const lundiDebut = lundiDe(new Date(getBlocActif().date_debut + "T00:00:00"));
+  const semaines = [];
+  for (let s = 0; s < duree; s++) semaines.push(statsSemaine(addJours(lundiDebut, 7 * s)));
+  const debutIso = isoDate(lundiDebut), finIso = isoDate(addJours(lundiDebut, duree * 7 - 1));
+  const entrees = getJournal().filter(e => e.date >= debutIso && e.date <= finIso);
+  const quotas = quotasHebdo();
+  const cumul = {};
+  Object.keys(quotas).forEach(t =>
+    cumul[t] = semaines.reduce((s, w) => s + (w.counts[t] || 0), 0));
+  const progression = Object.entries(getCharges())
+    .filter(([, pts]) => pts.length)
+    .map(([id, pts]) => ({
+      id, premier: pts[0].kg, dernier: pts[pts.length - 1].kg,
+      delta: pts[pts.length - 1].kg - pts[0].kg,
+    }));
+  return {
+    duree, semaines, quotas, cumul, progression,
+    extras: semaines.reduce((s, w) => s + Object.values(w.extras).reduce((a, b) => a + b, 0), 0),
+    signaux: semaines.reduce((s, w) => s + w.signaux, 0),
+    minimales: entrees.filter(e => (e.note || "").includes("séance minimale")).length,
+  };
+}
+
+function lectureBloc(b) {
+  const phrases = [];
+  phrases.push(`Sur ${b.duree} semaines : ` + Object.entries(b.quotas)
+    .map(([t, q]) => `${labelType(t).toLowerCase()} ${b.cumul[t]}/${q * b.duree}`).join(" · ") + ".");
+  const hausses = b.progression.filter(p => p.delta > 0);
+  if (hausses.length) {
+    const max = hausses.reduce((a, p) => (p.delta > a.delta ? p : a));
+    phrases.push(`Charges en hausse sur ${hausses.length} exercice${hausses.length > 1 ? "s" : ""} — ` +
+      `jusqu'à +${String(max.delta.toFixed(1)).replace(/\.0$/, "")} kg (${state.exercices[max.id]?.nom || max.id}).`);
+  }
+  if (b.signaux || b.minimales) {
+    const bouts = [];
+    if (b.signaux) bouts.push(`${b.signaux} signal${b.signaux > 1 ? "s" : ""}`);
+    if (b.minimales) bouts.push(`${b.minimales} séance${b.minimales > 1 ? "s" : ""} minimale${b.minimales > 1 ? "s" : ""}`);
+    phrases.push(`${bouts.join(" et ")} — la règle de prudence a fonctionné.`);
+  }
+  return phrases.slice(0, 3).join(" ");
+}
+
+function carteBilanBloc() {
+  const b = statsBloc();
+  const lignesQuotas = Object.entries(b.quotas).map(([t, q]) =>
+    `<div class="bilan-ligne"><span>${labelType(t)}</span>
+      <span class="val">${b.semaines.map(w => w.counts[t] || 0).join(" · ")}
+      <small>→ ${b.cumul[t]}/${q * b.duree}</small></span></div>`).join("");
+  const lignesCharges = b.progression.map(p =>
+    `<div class="bilan-ligne"><span>${state.exercices[p.id]?.nom || p.id}</span>
+      <span class="val">${p.premier} → ${p.dernier} kg${p.delta
+        ? ` (${p.delta > 0 ? "+" : ""}${String(p.delta.toFixed(1)).replace(/\.0$/, "")})` : ""}</span></div>`).join("");
+  const aParts = [`Extras : ${b.extras}`, `Signal : ${b.signaux}`,
+    `Minimales : ${b.minimales} (comptées en plein)`];
+  return `
+    <div class="bilan-carte bilan-bloc">
+      <h3>Bilan de bloc — ${state.bloc.nom}</h3>
+      <p class="lecture">${lectureBloc(b)}</p>
+      ${lignesQuotas}
+      <p class="hint">Compte par semaine (S1 à S${b.duree}), puis cumul.</p>
+      ${lignesCharges ? `<h3 class="bilan-sous-titre">Charges — du premier au dernier enregistrement</h3>${lignesCharges}` : ""}
+      <p class="hint">${aParts.join(" · ")}</p>
+    </div>`;
 }
 
 function rendreBilan() {
@@ -901,6 +1024,7 @@ function rendreBilan() {
     `<div class="bilan-ligne"><span>${labelType(t)}</span><span class="val">${n}</span></div>`).join("");
 
   cont.innerHTML = `
+    ${blocEnCloture() ? carteBilanBloc() : ""}
     <div class="bilan-carte">
       <h3>Lecture</h3>
       <p class="lecture">${lectureSemaine(cette, entreesSemaine(lundi))}</p>

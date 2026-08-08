@@ -11,6 +11,7 @@
     { "id": "muscu",  "label": "Muscu libre" },
     { "id": "boxe",   "label": "Boxe" },
     { "id": "marche", "label": "Marche" },
+    { "id": "signal", "label": "Signal", "signal": true },
     { "id": "autre",  "label": "Autre" }
   ],
   "semaine_type": [
