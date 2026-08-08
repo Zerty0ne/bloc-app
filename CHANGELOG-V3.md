@@ -187,3 +187,72 @@ fois ne produit rien. Pas de récompense variable (interdit) : le même geste pr
 toujours exactement la même réponse. Autres personas : neutre ou positif.
 
 **Verdict : gardée.**
+
+---
+
+## Itération 7 — Surbrillance du type « prévu aujourd'hui » dans la saisie · ABANDONNÉE
+
+**Proposition.** Marquer d'un liseré ambre le bouton-type correspondant au plan du
+jour (mardi → « Vélo » surligné), pour servir le trait 2.
+
+**Pourquoi c'est rejeté avant scoring complet.** Un bouton surligné-mais-pas-tapé
+en fin de journée est une dette implicite : exactement l'état que la règle dure
+(trait 5, interdit « aucune dette affichée ») bannit — le rail « couvert » marque ce
+qui est fait, jamais ce qui ne l'est pas, et cette surbrillance aurait inversé la
+polarité. Pire en semaine de signal physique : gêne au tendon un jour course, le
+bouton « Course » surligné pousse doucement contre la règle du lendemain. La ligne
+du jour (it. 1) sert déjà le trait 2 sans cet effet de bord.
+
+**Verdict : abandonnée** (conflit avec un interdit ; aucun score ne les rachète).
+
+---
+
+## Itération 8 — Toast de confirmation à chaque saisie manuelle · ABANDONNÉE
+
+**Proposition.** « Vélo — noté. » en toast après chaque tap de type (comme les
+raccourcis OS de l'it. 4).
+
+**Pré-score : 11/20** (trait 1 : 2 — déjà servi ; friction-feedback : 1 —
+redondant ; attention : 3 — un élément de plus à ignorer, risque de masquer le
+rappel 24h ; robustesse : 3 ; réversibilité : 2 — habitude vite prise, retrait
+visible). Dans l'app, la saisie se fait à l'écran : l'entrée apparaît dans la liste
+et le quota s'incrémente sous les yeux — un toast par-dessus est du bruit. Le toast
+de l'it. 4 se justifie uniquement parce que le raccourci OS court-circuite l'écran.
+La pulsation de segment (it. 6) est la bonne réponse au même besoin.
+
+**Verdict : abandonnée** (score < 12).
+
+---
+
+## Itération 9 — Thème clair automatique pour le plein soleil · ABANDONNÉE
+
+**Proposition.** `@media (prefers-color-scheme: light)` avec une palette claire,
+pour la lisibilité en extérieur (contexte d'usage déclaré).
+
+**Pré-score : 11/20** (trait servi : 0 — le plein soleil est un contexte, aucun
+des sept traits n'est nommable, et la grille est explicite : 0 si aucun trait ;
+friction-feedback : 1 ; attention : 4 ; robustesse : 3 ; réversibilité : 3).
+S'y ajoute un doute sérieux : dupliquer la palette double la surface de test
+visuel de chaque futur changement, et le thème sombre unique est un choix de
+design assumé de la V1. Doute sérieux = non.
+
+**Verdict : abandonnée** (score < 12 ; si la lisibilité extérieure devient un
+problème réel, la réponse proportionnée serait un bump de contraste de --muted,
+pas un second thème).
+
+---
+
+## Itération 10 — Navigation des semaines passées dans le bilan · ABANDONNÉE
+
+**Proposition.** Des flèches ‹ › dans le bilan pour consulter les semaines
+antérieures (servirait le trait 7, les rétrospectives).
+
+**Pré-score : 10/20** (trait 7 : 3 — mais le bilan montre déjà la semaine
+précédente entre parenthèses et la tendance 4 semaines : l'essentiel de la
+rétrospective est là sans navigation ; friction-feedback : 0 — n'améliore aucun
+parcours existant, en crée un ; attention : 1 — des taps nouveaux, et surtout un
+terrain d'exploration : c'est précisément le comportement que le trait 4 demande de
+ne pas récompenser ; robustesse : 3 ; réversibilité : 3). L'archéologie de son
+propre journal est l'hyperfocus déguisé en vertu.
+
+**Verdict : abandonnée** (score < 12).

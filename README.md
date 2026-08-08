@@ -1,4 +1,4 @@
-# Bloc — app d'entraînement personnelle (V2)
+# Bloc — app d'entraînement personnelle (V3)
 
 PWA statique, sans backend : journal d'activités + quotas hebdomadaires par type
 + guide de séance renfo (déroulé exercice par exercice, timers, saisie des charges).
@@ -12,6 +12,14 @@ saisie rétroactive (Aujourd'hui/Hier ou tap sur un jour du rail), et l'adhéren
 se mesure en quotas hebdomadaires par type (`quotas_hebdo` du bloc). La
 `semaine_type` reste affichée comme plan indicatif, sans validation. Un type
 sans quota (muscu, boxe…) est un « extra », compté à part.
+
+**V3** (voir `CHANGELOG-V3.md` pour le détail et les décisions) : ligne du jour
+contextuelle en tête d'accueil (plan du jour + reste de la semaine), carte
+« Lecture » du bilan (1-2 phrases générées par règles, ton factuel), deltas de
+charges sur l'écran de fin de séance renfo, raccourcis PWA « J'ai fait vélo /
+course » (appui long sur l'icône → `?fait=velo|course`, saisie du jour en un
+geste), échéance bloc 2 avec les déverrouillages lus dans les JSON (`bloc_min`),
+pulsation du segment de quota à la saisie.
 
 **Migration V1 → V2** : au premier lancement, les anciennes `validations`
 (fait/swap/minimale) et `bonus` sont converties en entrées de journal, puis
