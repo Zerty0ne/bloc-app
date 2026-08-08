@@ -78,11 +78,14 @@ function comptesParType(entrees) {
   return c;
 }
 
+let flashType = null;   // type dont le dernier segment pulse au prochain rendu
+
 function ajouterEntree(date, type, note = "") {
   signalerRegle24h(date, type);
   const j = getJournal();
   j.push({ date, type, note });
   setJournal(j);
+  flashType = type;
 }
 function supprimerEntree(idx) {
   const j = getJournal();
@@ -409,15 +412,17 @@ function rendreQuotas() {
 
   Object.entries(quotas).forEach(([type, quota]) => {
     const n = counts[type] || 0;
+    const dernier = type === flashType ? Math.min(n, quota) - 1 : -1;
     const ligne = document.createElement("div");
     ligne.className = "quota-ligne";
     ligne.innerHTML = `
       <span class="quota-label">${labelType(type)}</span>
       <span class="quota-segments">${Array.from({ length: quota }, (_, i) =>
-        `<span class="${i < Math.min(n, quota) ? "plein" : ""}"></span>`).join("")}</span>
+        `<span class="${i < Math.min(n, quota) ? "plein" : ""}${i === dernier ? " nouveau" : ""}"></span>`).join("")}</span>
       <span class="quota-compte">${n}/${quota}</span>`;
     cont.appendChild(ligne);
   });
+  flashType = null;
 
   const extras = Object.entries(counts).filter(([t]) => !(t in quotas))
     .reduce((s, [, n]) => s + n, 0);

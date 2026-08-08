@@ -71,6 +71,12 @@ h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
   font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums;
 }
 .quota-extras { margin-top: 10px; font-size: 0.8rem; color: var(--muted); }
+@keyframes quota-pop {
+  0% { transform: scale(0.6); opacity: 0.4; }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.quota-segments span.nouveau { animation: quota-pop 0.4s ease-out; }
 
 /* ---------- Rail de la semaine ---------- */
 .semaine-rail { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
@@ -265,5 +271,5 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  * { transition: none !important; animation: none !important; }
 }

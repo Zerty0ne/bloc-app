@@ -159,3 +159,31 @@ comportement, ne récompense pas l'ouverture répétée (hyperfocus), ne juge ri
 (fatigue/signal). Elle ne fait que rendre l'échéance tangible.
 
 **Verdict : gardée.**
+
+---
+
+## Itération 6 — Pulsation du segment de quota à la saisie · GARDÉE
+
+**Proposition.** À chaque saisie, le segment de quota qui vient de se remplir pulse
+0,4 s (CSS pur, `prefers-reduced-motion` respecté — l'animation y est coupée comme
+les transitions). Une saisie hors quota ne pulse rien (l'entrée qui apparaît dans la
+liste reste le feedback). Un simple re-rendu (navigation) ne re-déclenche pas.
+
+**Traits servis.** 1 (le geste central produit une réponse visible à l'endroit
+exact où le regard se pose — le quota).
+**Comportement changé.** La confirmation de saisie devient physique, sans toast
+redondant (l'alternative « toast à chaque saisie » a été rejetée, itération 8).
+**Coût d'attention.** Nul : rien d'ajouté aux parcours, 0,4 s d'animation unique.
+
+**Pré-score : 18/20** (4 + 4 + 4 + 3 + 3).
+
+**Tests.** Pulse sur le bon segment (1er segment vélo après une saisie vélo), pas
+de pulse sur les autres, pas de re-pulse lors d'un re-rendu sans saisie.
+Régression : 31/31.
+
+**Personas.** Hyperfocus : c'est le point sensible — la pulsation ne se déclenche
+qu'à la saisie d'une activité réelle, jamais à la consultation ; ouvrir l'app 15
+fois ne produit rien. Pas de récompense variable (interdit) : le même geste produit
+toujours exactement la même réponse. Autres personas : neutre ou positif.
+
+**Verdict : gardée.**
