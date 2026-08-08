@@ -223,6 +223,7 @@ function rendreAccueil() {
     (restant > 0 ? `Bloc 2 dans <strong>${restant} j</strong>` : `Bloc terminé — bilan !`);
 
   if (!saisieDate) saisieDate = isoDate(new Date());
+  rendreLigneJour();
   rendreSaisie();
   rendreQuotas();
   rendreRail();
@@ -246,6 +247,28 @@ function rendreAccueil() {
   // Règles du bloc
   document.getElementById("regles").innerHTML =
     `<ul>${state.bloc.regles.map(r => `<li>${r}</li>`).join("")}</ul>`;
+}
+
+/* ----- Ligne du jour : quoi aujourd'hui, que reste-t-il ----- */
+function resteTexte(counts) {
+  const restes = Object.entries(quotasHebdo())
+    .map(([t, q]) => [t, Math.max(q - (counts[t] || 0), 0)])
+    .filter(([, r]) => r > 0);
+  return restes.length
+    ? "reste " + restes.map(([t, r]) => `${r} ${labelType(t).toLowerCase()}`).join(" · ")
+    : "semaine couverte";
+}
+
+function rendreLigneJour() {
+  const aujourdhui = isoDate(new Date());
+  const plan = state.bloc.semaine_type[(new Date().getDay() + 6) % 7];
+  const counts = comptesParType(entreesSemaine(lundiDe(new Date())));
+  const quotas = quotasHebdo();
+  const couvert = plan.type !== "repos" && (
+    (plan.type in quotas && (counts[plan.type] || 0) >= quotas[plan.type]) ||
+    getJournal().some(e => e.date === aujourdhui && e.type === plan.type));
+  document.getElementById("ligne-jour").innerHTML =
+    `Aujourd'hui : <strong>${plan.label || "Repos"}</strong>${couvert ? " ✓" : ""} — ${resteTexte(counts)}.`;
 }
 
 /* ----- Saisie « J'ai fait… » ----- */
@@ -431,14 +454,6 @@ function rendreRail() {
     }
     rail.appendChild(carte);
   });
-
-  // Synthèse : quotas − journal
-  const restes = Object.entries(quotas)
-    .map(([t, q]) => [t, Math.max(q - (counts[t] || 0), 0)])
-    .filter(([, r]) => r > 0);
-  document.getElementById("synthese").textContent = restes.length
-    ? "Reste cette semaine : " + restes.map(([t, r]) => `${r} ${labelType(t).toLowerCase()}`).join(" · ")
-    : "Semaine couverte.";
 }
 
 /* ============================================================
